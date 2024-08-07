@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Practice</title>
+</head>
+
+<body>
+    <!-- {{ results }} -->
+    <ul>
+        {% for result in results %}
+        <li style="list-style-type: none;">
+            {{ result.0 }} {{ ' - ' }} {{ result.1 }} {{ '--' }} {{ result.2 }}
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>
+
+
+<!-- Rendering Tuple -->
+<!-- <li>{{ product.0}} {{'--'}} {{ product.1 }} {{'--'}} {{ product.2}}</li> -->
+
+<!-- <li> {{ product.id }} {{ '-' }} {{ product.title }}</li> -->
+<!-- <li> {{ product.id }} {{ '-' }} {{ product.unit_price }}</li> -->
+<!-- <li> {{ product.id }} {{ '-' }} {{ product.unit_price }} -- {{ product.collection__title }}</li> -->
+<!-- <li> {{product.id}} {{ '-' }} {{product.title}}</li> -->
+
+<!-- <li> {{product.title}}</li> -->
+<!-- <li> {{ product.id }} {{ '--' }} {{product.placed_at}}</li> -->
+
+<!-- {{ single_product.title }} -->
+<!-- 
+ -->
