@@ -18,7 +18,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     
 
     #* This is done by Mosh:
-    products_count = serializers.IntegerField()
+    products_count = serializers.IntegerField(read_only=True)
     
     #* This is my implementation
     # products_count = serializers.SerializerMethodField(method_name='products_count_method')
