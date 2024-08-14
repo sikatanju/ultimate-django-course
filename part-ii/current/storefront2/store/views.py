@@ -11,8 +11,8 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import ProductSerializers, CollectionSerializer
-from .models import Product, Collection, OrderItem
+from .serializers import ProductSerializer, CollectionSerializer, ReviewSerializer
+from .models import Product, Collection, OrderItem, Review
 
 
 #* Starting Advanced API's concept.
@@ -60,7 +60,7 @@ from .models import Product, Collection, OrderItem
 # *** In this view_set, we've combined ProductList & ProductDetail with all the functionalities, although we need to change the route.
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
-    serializer_class = ProductSerializers
+    serializer_class = ProductSerializer
 
     def get_serializer_context(self):
         return {'request': self.request}
@@ -151,6 +151,26 @@ class CollectionViewSet(ModelViewSet):
         
         return super().destroy(request, *args, **kwargs)
 
+
+class ReviewViewSet(ModelViewSet):
+    # queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        return Review.objects.filter(product_id=self.get_product_id()).all()
+        # return Review.objects.filter(product_id=self.kwargs['product_pk']).all()
+
+    def get_serializer_context(self):
+        return {'product_id': self.kwargs['product_pk']}
+
+    def get_product_id(self):
+        return self.kwargs['product_pk']
+
+    def destroy(self, request, *args, **kwargs):
+        if Product.objects.filter(reviews=kwargs['pk']).count() > 0:
+            return Response({'Errors': "Can't delete this review, because it's associated with an existing product"})
+
+        return super().destroy(request, *args, **kwargs)
 
 
 """ ***

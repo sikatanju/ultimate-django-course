@@ -1,10 +1,12 @@
 from decimal import Decimal
 
+import datetime
+
 from rest_framework import serializers
 
 from django.db.models import Count
 
-from .models import Product, Collection
+from .models import Product, Collection, Review
 
 
 # class CollectionSerializers(serializers.Serializer):
@@ -28,7 +30,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     #     return count['id__count']
 
 
-class ProductSerializers(serializers.ModelSerializer):
+class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         #* WE could add custom fields as well: 
@@ -64,7 +66,19 @@ class ProductSerializers(serializers.ModelSerializer):
         instance.inventory = 100
         instance.save()
         return super().update(instance, validated_data)
+    
 
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['id', 'name', 'description', 'date']
+        
+
+    # date = serializers.DateField(read_only=True)
+
+    def create(self, validated_data):
+        # product_id = self.context['product_id']
+        return Review.objects.create(product_id=self.context['product_id'], **validated_data)
 
 #* This bit of code is repititive, better way to implement this is to use 'ModelSerializer'
 
