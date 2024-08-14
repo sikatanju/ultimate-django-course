@@ -1,6 +1,7 @@
 from django.urls import path, include
-from rest_framework.routers import SimpleRouter, DefaultRouter
-# from pprint import pprint
+# from rest_framework.routers import SimpleRouter
+from rest_framework_nested import routers
+from pprint import pprint
 
 from . import views
 
@@ -16,10 +17,17 @@ from . import views
 
 
 # router = SimpleRouter()
-router = DefaultRouter()
-router.register('products', views.ProductViewSet)
+router = routers.DefaultRouter()
 router.register('collections', views.CollectionViewSet)
-# pprint(router.urls)
+
+router.register('products', views.ProductViewSet)
+# router.register('reviews', views.Review)
+
+review_router = routers.NestedSimpleRouter(router, r'products', lookup='product')
+review_router.register(r'reviews', views.ReviewViewSet, basename='product-reviews')
+
+
+pprint(review_router.urls)
 
 #* Either we could do this, if only we're using the urls from router:
 # urlpatterns = router.urls
@@ -28,4 +36,5 @@ router.register('collections', views.CollectionViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('', include(review_router.urls)),
 ]
