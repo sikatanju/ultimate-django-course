@@ -3,6 +3,8 @@ from django.shortcuts import get_object_or_404
 # from django.http import HttpResponse
 from django.db.models import Count
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 # from rest_framework.views import APIView
 # from rest_framework.mixins import ListModelMixin, CreateModelMixin
 # from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -10,9 +12,14 @@ from django.db.models import Count
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.filters import SearchFilter, OrderingFilter
+# from rest_framework.pagination import PageNumberPagination
+
 
 from .serializers import ProductSerializer, CollectionSerializer, ReviewSerializer
 from .models import Product, Collection, OrderItem, Review
+from .filters import ProductFilter
+from .pagination import DefaultPagination
 
 
 #* Starting Advanced API's concept.
@@ -61,6 +68,32 @@ from .models import Product, Collection, OrderItem, Review
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    # filterset_fields = ['collection_id']
+    filterset_class = ProductFilter
+
+    search_fields = ['title', 'description']
+
+    #* if below fields is not specified, we can order by any fields in the browsable api
+    ordering_fields = ['unit_price', 'last_update']
+
+    #* Adding Pagination
+    # pagination_class = PageNumberPagination 
+    pagination_class = DefaultPagination
+
+    #* To use custom filtering, we need to create a class for that.
+
+    #* Now we're using django_filters, that's why we don't need it.
+    # def get_queryset(self):
+    #     queryset = Product.objects.all()
+    #     #* Filtering data according to query_params, if collection_id is passed
+    #     collection_id = self.request.query_params.get('collection_id')
+        
+    #     if collection_id != None:
+    #         queryset = queryset.filter(collection_id=collection_id).all()
+
+    #     return queryset
 
     def get_serializer_context(self):
         return {'request': self.request}
