@@ -1,76 +1,32 @@
-from django.shortcuts import get_object_or_404
-# from django.http import HttpRequest
-# from django.http import HttpResponse
-from django.db.models import Count
-
+# from django.shortcuts import get_object_or_404
+from django.db.models import Count, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
 
-# from rest_framework.views import APIView
-# from rest_framework.mixins import ListModelMixin, CreateModelMixin
-# from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-# from rest_framework.decorators import api_view
-from rest_framework.viewsets import ModelViewSet
+from pprint import pprint
+
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.filters import SearchFilter, OrderingFilter
-# from rest_framework.pagination import PageNumberPagination
+from rest_framework.mixins import *
+from rest_framework import status
 
-
-from .serializers import ProductSerializer, CollectionSerializer, ReviewSerializer
-from .models import Product, Collection, OrderItem, Review
 from .filters import ProductFilter
 from .pagination import DefaultPagination
+from .serializers import ProductSerializer, CollectionSerializer, ReviewSerializer, CartSerializer, \
+                         CartItemSerializer, CreateCartItemSerializer, UpdateCartItemSerializer
+from .models import Product, Collection, OrderItem, Review, Cart, CartItem
 
 
 #* Starting Advanced API's concept.
-
-#* Implementing Class-based views.
-
-#* Since these code is repititive throughout the Product & Collection views, rest_framework provides GenericAPIView
-# class ProductList(APIView):
-    
-#     def get(self, request):
-#         query_set = Product.objects.select_related('collection').prefetch_related('promotions').all()
-#         product_list_seri = ProductSerializers(query_set, many=True, context={'request': request})
-        
-#         return Response(product_list_seri.data)
-    
-#     def post(self, request):
-#         serializer = ProductSerializers(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response(serializer.data)
-
-
-# class ProductDetail(APIView):
-
-#     def get(self, request, id):
-#         product_obj = get_object_or_404(Product, pk=id)
-#         product_seri = ProductSerializers(product_obj)
-#         return Response(product_seri.data, status=status.HTTP_200_OK)
-    
-#     def put(self, request, id):
-#         product_obj = get_object_or_404(Product, pk=id)
-#         serializer = ProductSerializers(product_obj, data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-#     def delete(self, request, id):
-#         product_obj = get_object_or_404(Product, pk=id)
-#         if product_obj.orderitems.count() > 0:
-#             return Response({'errors': "Can't delete this product because it's associated with an order."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        
-#         product_obj.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
     
 # *** In this view_set, we've combined ProductList & ProductDetail with all the functionalities, although we need to change the route.
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    # filterset_fields = ['collection_id']
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter] # filterset_fields = ['collection_id']
+    
+    #* To use custom filtering, we need to create a class for that.
     filterset_class = ProductFilter
 
     search_fields = ['title', 'description']
@@ -82,39 +38,81 @@ class ProductViewSet(ModelViewSet):
     # pagination_class = PageNumberPagination 
     pagination_class = DefaultPagination
 
-    #* To use custom filtering, we need to create a class for that.
-
-    #* Now we're using django_filters, that's why we don't need it.
-    # def get_queryset(self):
-    #     queryset = Product.objects.all()
-    #     #* Filtering data according to query_params, if collection_id is passed
-    #     collection_id = self.request.query_params.get('collection_id')
-        
-    #     if collection_id != None:
-    #         queryset = queryset.filter(collection_id=collection_id).all()
-
-    #     return queryset
-
     def get_serializer_context(self):
         return {'request': self.request}
 
-    # def delete(self, request, pk): #* This line makes the delete button appear on the products-list page
-    # def destroy(self, request, pk):
-    #     product_obj = get_object_or_404(Product, pk=pk)
-    #     if product_obj.orderitems.count() > 0:
-    #         return Response({'errors': "Can't delete this product because it's associated with an order."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        
-    #     product_obj.delete()
-    #     return Response(status=status.HTTP_204_NO_CONTENT)        
-    
-    #* Mosh's implementation: 
     def destroy(self, request, *args, **kwargs):
         if OrderItem.objects.filter(product_id=kwargs['pk']).count() > 0:
             return Response({'errors': "Can't delete this product because it's associated with an order."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
         
         return super().destroy(request, *args, **kwargs)
 
+
+#* Just similar to the Product, we're changin Collection as well.
+
+class CollectionViewSet(ModelViewSet):
+    queryset = Collection.objects.annotate(products_count=Count('products')).all()    
+    serializer_class = CollectionSerializer
     
+    def destroy(self, request, *args, **kwargs):
+        if Product.objects.filter(collection_id=kwargs['pk']).count() > 0:
+            return Response({'Errors': "Can't delete this collection, because it's associated with other products"},
+                    status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        
+        return super().destroy(request, *args, **kwargs)
+
+
+class ReviewViewSet(ModelViewSet):
+    # queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        return Review.objects.filter(product_id=self.get_product_id()).all()
+        # return Review.objects.filter(product_id=self.kwargs['product_pk']).all()
+
+    def get_serializer_context(self):
+        return {'product_id': self.kwargs['product_pk']}
+
+    def get_product_id(self):
+        return self.kwargs['product_pk']
+
+    def destroy(self, request, *args, **kwargs):
+        if Product.objects.filter(reviews=kwargs['pk']).count() > 0:
+            return Response({'Errors': "Can't delete this review, because it's associated with an existing product"})
+
+        return super().destroy(request, *args, **kwargs)
+
+
+class CartViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin):
+    #* Here prefetching 'items' (`items` is the related_name defined in models), with with the product of each item
+    #* that's why using '__' after items to connect product
+    queryset = Cart.objects.prefetch_related('items__product').all()
+    serializer_class = CartSerializer
+    
+class CartItemViewSet(ModelViewSet):
+    # Here by defining http_method_name, we'll only allow those request method to execute:
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    
+    def get_queryset(self):
+        return CartItem.objects \
+            .filter(cart_id=self.kwargs['cart_pk']) \
+            .select_related('product').all()
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CreateCartItemSerializer
+        
+        elif self.request.method == 'PATCH':
+            return UpdateCartItemSerializer
+        
+        return CartItemSerializer
+    
+    def get_serializer_context(self):
+        return {'cart_id': self.kwargs['cart_pk']}
+
+
+#####################
+
 
 """ ***
 * Currently, ProductList & ProductDetail also contain some duplications, to further combine these two class we could
@@ -159,52 +157,11 @@ class ProductViewSet(ModelViewSet):
 #         product_obj.delete()
 #         return Response(status=status.HTTP_204_NO_CONTENT)        
 
-#* Just similar to the Product, we're changin Collection as well.
-
-class CollectionViewSet(ModelViewSet):
-
-    queryset = Collection.objects.annotate(products_count=Count('products')).all()    
-    serializer_class = CollectionSerializer
-    
-    # def delete(self, request, pk): #* This line makes the delete button appear on the products-list page
-    # def destroy(self, request, pk):
-    #     collection = get_object_or_404(Collection, pk=pk)
-
-    #     if collection.products.count() > 0:
-    #         return Response({'Errors': "Can't delete this collection, because it's associated with other products"},
-    #                 status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        
-    #     collection.delete()
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
-    
-    def destroy(self, request, *args, **kwargs):
-        if Product.objects.filter(collection_id=kwargs['pk']).count() > 0:
-            return Response({'Errors': "Can't delete this collection, because it's associated with other products"},
-                    status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        
-        return super().destroy(request, *args, **kwargs)
 
 
-class ReviewViewSet(ModelViewSet):
-    # queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
+#* Implementing Class-based views.
 
-    def get_queryset(self):
-        return Review.objects.filter(product_id=self.get_product_id()).all()
-        # return Review.objects.filter(product_id=self.kwargs['product_pk']).all()
-
-    def get_serializer_context(self):
-        return {'product_id': self.kwargs['product_pk']}
-
-    def get_product_id(self):
-        return self.kwargs['product_pk']
-
-    def destroy(self, request, *args, **kwargs):
-        if Product.objects.filter(reviews=kwargs['pk']).count() > 0:
-            return Response({'Errors': "Can't delete this review, because it's associated with an existing product"})
-
-        return super().destroy(request, *args, **kwargs)
-
+#* Since these code is repititive throughout the Product & Collection views, rest_framework provides GenericAPIView
 
 """ ***
 * Currently, CollectionList & CollectionDetail also contain some duplications, to further combine these two class we could
@@ -344,6 +301,44 @@ class ReviewViewSet(ModelViewSet):
 #         return Response(serializer.data, status=status.HTTP_200_OK)
     
 #     elif request.method == 'DELETE':    
+#         if product_obj.orderitems.count() > 0:
+#             return Response({'errors': "Can't delete this product because it's associated with an order."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        
+#         product_obj.delete()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# class ProductList(APIView):
+    
+#     def get(self, request):
+#         query_set = Product.objects.select_related('collection').prefetch_related('promotions').all()
+#         product_list_seri = ProductSerializers(query_set, many=True, context={'request': request})
+        
+#         return Response(product_list_seri.data)
+    
+#     def post(self, request):
+#         serializer = ProductSerializers(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         return Response(serializer.data)
+
+
+# class ProductDetail(APIView):
+
+#     def get(self, request, id):
+#         product_obj = get_object_or_404(Product, pk=id)
+#         product_seri = ProductSerializers(product_obj)
+#         return Response(product_seri.data, status=status.HTTP_200_OK)
+    
+#     def put(self, request, id):
+#         product_obj = get_object_or_404(Product, pk=id)
+#         serializer = ProductSerializers(product_obj, data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+#     def delete(self, request, id):
+#         product_obj = get_object_or_404(Product, pk=id)
 #         if product_obj.orderitems.count() > 0:
 #             return Response({'errors': "Can't delete this product because it's associated with an order."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
         

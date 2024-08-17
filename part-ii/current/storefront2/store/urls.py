@@ -23,18 +23,25 @@ router.register('collections', views.CollectionViewSet)
 router.register('products', views.ProductViewSet, basename='products')
 # router.register('reviews', views.Review)
 
+router.register('carts', views.CartViewSet, basename='carts')
+
+
 review_router = routers.NestedSimpleRouter(router, r'products', lookup='product')
 review_router.register(r'reviews', views.ReviewViewSet, basename='product-reviews')
 
+cartitem_router = routers.NestedDefaultRouter(router, r'carts', lookup='cart')
+cartitem_router.register('items', views.CartItemViewSet, basename='cart-items')
 
-pprint(review_router.urls)
+
+# pprint(review_router.urls)
 
 #* Either we could do this, if only we're using the urls from router:
-# urlpatterns = router.urls
+# urlpatterns = router.urls + review_router.urls
 
 #* Otherwise, if we have other url pattern we have to specify, what we could do is:
 
 urlpatterns = [
     path('', include(router.urls)),
     path('', include(review_router.urls)),
+    path('', include(cartitem_router.urls)),
 ]
