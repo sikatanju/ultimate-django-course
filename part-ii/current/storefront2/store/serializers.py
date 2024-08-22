@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from django.db.models import Count
 
-from .models import Product, Collection, Review, Cart, CartItem
+from .models import Product, Collection, Review, Cart, CartItem, Customer
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -147,6 +147,13 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
 
     # def calculate_total_price(self, cart_item: CartItem):
     #     return cart_item.quantity * cart_item.product.unit_price
+
+class CustomerSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = Customer
+        fields = ['id', 'user_id', 'phone', 'birth_date', 'membership']
+
 
 #* This bit of code is repititive, better way to implement this is to use 'ModelSerializer'
 
