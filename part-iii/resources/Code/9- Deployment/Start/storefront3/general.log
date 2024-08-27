@@ -1,0 +1,13 @@
+2021-11-24 16:19:49,571 (WARNING) - django.request - Unauthorized: /store/collections/
+2021-11-24 16:19:49,580 (WARNING) - django.request - Forbidden: /store/collections/
+2021-11-24 16:19:49,590 (WARNING) - django.request - Bad Request: /store/collections/
+2021-11-24 16:20:12,076 (WARNING) - django.request - Unauthorized: /store/collections/
+2021-11-24 16:20:12,085 (WARNING) - django.request - Forbidden: /store/collections/
+2021-11-24 16:20:12,093 (WARNING) - django.request - Bad Request: /store/collections/
+2021-11-24 16:20:59,964 (WARNING) - django.request - Unauthorized: /store/collections/
+2021-11-24 16:20:59,972 (WARNING) - django.request - Forbidden: /store/collections/
+2021-11-24 16:20:59,979 (WARNING) - django.request - Bad Request: /store/collections/
+2021-11-24 16:22:38,523 (WARNING) - django.request - Unauthorized: /store/collections/
+2021-11-24 16:22:38,587 (WARNING) - django.request - Forbidden: /store/collections/
+2021-11-24 16:22:38,616 (WARNING) - django.request - Bad Request: /store/collections/
+2021-11-24 16:23:15,199 (WARNING) - silk.profiling.profiler - Cannot execute silk_profile as silk is not installed correctly.
