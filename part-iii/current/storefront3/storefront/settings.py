@@ -184,3 +184,14 @@ DEFAULT_FROM_EMAIL = 'from@sika.com'
 ADMINS = [
     ('sika', 'admin@sika.com')
 ]
+
+
+#* Celery settings
+CELERY_BROKER_URL = 'redis://localhost:6379/1'
+CELERY_BEAT_SCHEDULE = {
+    'notify_customers': {
+        'task': 'playground.tasks.notify_customer',
+        'schedule': 5,
+        'args': ['Hello World!']
+    }
+}
