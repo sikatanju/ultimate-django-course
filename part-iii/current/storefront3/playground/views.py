@@ -3,8 +3,12 @@ from django.core.mail import send_mail, send_mass_mail, mail_admins, BadHeaderEr
 
 from templated_mail.mail import BaseEmailMessage
 
-def say_hello(request):
+from .tasks import notify_customer
 
+def say_hello(request):
+    notify_customer.delay('Hello')
+    return render(request, 'hello.html', {'name': 'Mosh'})
+    
     # * Attaching files with an email.
     # try: 
     #     email = EmailMessage('subject', 'Message with an attached file', 'from@adminsika.com', ['dummy1@sika.com'])
@@ -13,16 +17,16 @@ def say_hello(request):
     #     email.send()
 
     #* Sending templated emails:
-    try: 
-        message = BaseEmailMessage(
-            template_name='emails/email.html',
-            context={'name' : 'Sika'}
-        )
-        message.send(['john@sika.com'])
-    except BadHeaderError:
-        pass
+    # try: 
+    #     message = BaseEmailMessage(
+    #         template_name='emails/email.html',
+    #         context={'name' : 'Sika'}
+    #     )
+    #     message.send(['john@sika.com'])
+    # except BadHeaderError:
+    #     pass
 
-    return render(request, 'hello.html', {'name': 'Mosh'})
+    
 
 
     # send_mass_mail('subject_of the mail', 
