@@ -6,13 +6,13 @@ class WebsiteUser(HttpUser):
     wait_time = between(1, 5)   
     
     # Adding weights
-    @task(2)
+    @task(1)
     def view_products(self):
         print('View Products')
         collection_id = randint(2, 6)
         self.client.get(f'/store/products/?collection_id={collection_id}', name='/store/products')
 
-    @task(4)
+    @task(1)
     def view_product_details(self):
         print('View Products Details')
         product_id = randint(1, 1000)
@@ -28,6 +28,11 @@ class WebsiteUser(HttpUser):
                             json={'product_id': product_id, 'quantity': 1})
 
     
+    @task(10)
+    def say_hello(self):
+        self.client.get('/playground/hello/', name='/playground/hello/')
+
+
     def on_start(self) -> None:
         response = self.client.post('/store/carts/')
         result = response.json()
