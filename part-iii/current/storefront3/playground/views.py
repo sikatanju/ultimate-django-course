@@ -1,13 +1,41 @@
 from django.shortcuts import render
 from django.core.mail import send_mail, send_mass_mail, mail_admins, BadHeaderError, EmailMessage
+from django.core.cache import cache
+from django.views.decorators import cache_page
+from django.utils.decorators import method_decorator
 
+from rest_framework.views import APIView
 from templated_mail.mail import BaseEmailMessage
 
 from .tasks import notify_customer
 
-def say_hello(request):
-    notify_customer.delay('Hello')
-    return render(request, 'hello.html', {'name': 'Mosh'})
+import requests
+
+
+class HelloView(APIView):
+    @method_decorator(cache_page(5*60))
+    def say_hello(request):
+        # * After adding cache_page, we could remove the low level caching
+        response = requests.get('https://httpbin.org/delay/1')
+        data = response.json()
+        return render(request, 'hello.html', {'name': data})
+    
+
+# @cache_page(5*60) #* 5*60 refers to 5 minutes
+# def say_hello(request):
+#     # * After adding cache_page, we could remove the low level caching
+#     response = requests.get('https://httpbin.org/delay/1')
+#     data = response.json()
+#     return render(request, 'hello.html', {'name': data})
+
+    # key = 'httpbin_result'
+    # if cache.get(key) is None:
+    #     response = requests.get('https://httpbin.org/delay/1')
+    #     data = response.json()
+    #     cache.set(key, data)
+    
+    # # notify_customer.delay('Hello')
+    # return render(request, 'hello.html', {'name': 'Mosh'})
     
     # * Attaching files with an email.
     # try: 
